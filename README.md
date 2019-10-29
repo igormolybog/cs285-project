@@ -1,4 +1,4 @@
-# gym-maze
+# Reward function adaptation: maze env
 
 A simple 2D maze environment where an agent (blue dot) finds its way from the top left corner (blue square) to the goal at the bottom right corner (red square). 
 The objective is to find the shortest path from the start to the goal.
@@ -46,7 +46,11 @@ cd gym-maze
 python setup.py install
 ```
 ## Examples
-An example of finding the shortest path through the maze using Q-learning can be found here: https://github.com/tuzzer/ai-gym/blob/master/maze_2d/maze_2d_q_learning.py
+```bash
+python maze_2d_q_learning.py
+```
 
 ![Solving 20x20 maze with loops and portals using Q-Learning](http://i.giphy.com/rfazKQngdaja8.gif)
+
+The project is based on repositories [1](https://github.com/MattChanTK/gym-maze) and [2](https://github.com/MattChanTK/ai-gym)
 
