@@ -9,12 +9,5 @@ class Q_table(np.ndarray):
     def __call__(self, obs):
         '''
         observations are supposed to be the first indexes
-        obs is either a list or tuple or ndarray
         '''
-        buffer = self
-        if isinstance(obs, (list, tuple, np.ndarray)):
-            for i in obs:
-                buffer = buffer[i,...]
-            return buffer
-        else :
-            return self[obs]
+        return self[obs]
