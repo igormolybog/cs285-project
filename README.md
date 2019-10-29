@@ -50,6 +50,8 @@ python setup.py install
 python maze_2d_q_learning.py
 ```
 
+## [Evolutionary algorithm](https://github.com/DEAP/deap)
+
 ![Solving 20x20 maze with loops and portals using Q-Learning](http://i.giphy.com/rfazKQngdaja8.gif)
 
 The project is based on repositories [1](https://github.com/MattChanTK/gym-maze) and [2](https://github.com/MattChanTK/ai-gym)
