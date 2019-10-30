@@ -27,7 +27,7 @@ MAX_NVIDEO = 2
 MAX_VIDEO_LEN = 40 # we overwrite this in the code below
 
 
-class RL_Trainer(object):
+class Maze_Trainer(object):
 
     def __init__(self, params):
 
@@ -101,7 +101,7 @@ class RL_Trainer(object):
         
         # Store transition in the buffer
         transition = []
-        transition. append(Path(self.agent.current_obs, action, reward, next_obs, done))
+        transition.append(Path(self.agent.current_obs, action, reward, next_obs, done))
         self.replay_buffer.add_rollouts(transition) 
 
         # Update agent current position
@@ -138,29 +138,35 @@ class RL_Trainer(object):
                 self.step_env
                 envsteps_this_batch = 1
             else: 
-                envsteps_this_batch = self.collect_training_trajectories(itr, self.agent, self.params['batch_size'])
-                            
+                paths, envsteps_this_batch = self.collect_simulation_trajectories(itr, self.agent, self.params['batch_size'])
+                self.replay_buffer.add_rollouts(paths)
+                
             self.total_envsteps += envsteps_this_batch
 
 
             # Train agent (using sampled data from replay buffer)
-            all_losses = self.train_agent()
-
-            #if self.params['logdir'].split('/')[-1][:2] == 'mb' and itr==0:
-            if itr == 0:
-                self.log_model_predictions(itr, all_losses)
+            if itr >= self.params['training_begins']:
+                start_train = True
+            else:
+                start_train= False
+                
+            if start_train:
+                all_losses = self.train_agent()
 
             # log/save
-            if self.logmetrics:
-                print('\nBeginning logging procedure...')
-                self.perform_logging(itr, paths, eval_policy, train_video_paths, all_losses)
+            if start_train and self.logmetrics:
+                self.simple_training_log_function(itr, all_losses)
 
-            return
+              
+                self.evaluate_trainer(itr,eval_policy)
+            
+        print("Training Finished!")    
+        return
 
     ####################################
     ####################################
 
-    def collect_training_trajectories(self, itr, collect_policy, batch_size):
+    def collect_simulation_trajectories(self, itr, collect_policy, batch_size):
         
         print("\nCollecting data to be used for training...")
         
@@ -168,26 +174,46 @@ class RL_Trainer(object):
         paths, envsteps_this_batch = sample_trajectories(self.env, collect_policy, batch_size, self.params['ep_len'])
 
         # Add Simulated Sample Paths to Replay Buffer
-        self.replay_buffer.add_rollouts(paths)
         
-        return envsteps_this_batch
+        return paths, envsteps_this_batch
 
 
     def train_agent(self):
         print('\nTraining agent using sampled data from replay buffer...')
-        total_loss = []
+
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
 
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch =  self.replay_buffer.sample_recent_data(self.params['train_batch_size'])
                      
             loss = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
             
-            total_loss.append(loss)
-        
-        return total_loss
+        return loss
 
     ####################################
     ####################################
+
+    def simple_training_log_function(self, itr, loss):
+        
+        print("\n Current Training Major Iteration: ", itr, " Current Training Loss: ", loss)
+        
+        return
+    
+    
+    def evaluate_trainer(self, itr, eval_policy):
+        
+         eval_paths, eval_envsteps_this_batch = self.collect_simulation_trajectories(0, eval_policy, self.params['eval_batch_size'])
+         
+         eval_returns = [eval_path["reward"].sum() for eval_path in eval_paths]
+         eval_ep_lens = [len(eval_path["reward"]) for eval_path in eval_paths]
+
+         print("Avg Evaluation Returns: ", np.mean(eval_returns))
+         print("Evaluation STD on Returns: ", np.std(eval_returns))
+         print("Maximum Return on Evaluation Runs: ", np.max(eval_returns))
+         print("Minimum Return on Evaluation Runs: ",np.min(eval_returns))
+         print("Average Episode Length", np.mean(eval_ep_lens))
+         
+         return
+
 
     def perform_logging(self, itr, paths, eval_policy, train_video_paths, all_losses):
 
@@ -251,38 +277,3 @@ class RL_Trainer(object):
             print('Done logging...\n\n')
 
             self.logger.flush()
-
-
-    def log_model_predictions(self, itr, all_losses):
-        # model predictions
-
-        import matplotlib.pyplot as plt
-        self.fig = plt.figure()
-
-        # sample actions
-        action_sequence = self.agent.actor.sample_action_sequences(num_sequences=1, horizon=10) #20 reacher
-        action_sequence = action_sequence[0]
-
-        # calculate and log model prediction error
-        mpe, true_states, pred_states = calculate_mean_prediction_error(self.env, action_sequence, self.agent.dyn_models, self.agent.actor.data_statistics)
-        assert self.params['agent_params']['ob_dim'] == true_states.shape[1] == pred_states.shape[1]
-        ob_dim = self.params['agent_params']['ob_dim']
-
-        # skip last state for plotting when state dim is odd
-        if ob_dim%2 == 1:
-            ob_dim -= 1
-
-        # plot the predictions
-        self.fig.clf()
-        for i in range(ob_dim):
-            plt.subplot(ob_dim/2, 2, i+1)
-            plt.plot(true_states[:,i], 'g')
-            plt.plot(pred_states[:,i], 'r')
-        self.fig.suptitle('MPE: ' + str(mpe))
-        self.fig.savefig(self.params['logdir']+'/itr_'+str(itr)+'_predictions.png', dpi=200, bbox_inches='tight')
-
-        # plot all intermediate losses during this iteration
-        np.save(self.params['logdir']+'/itr_'+str(itr)+'_losses.npy', all_losses)
-        self.fig.clf()
-        plt.plot(all_losses)
-        self.fig.savefig(self.params['logdir']+'/itr_'+str(itr)+'_losses.png', dpi=200, bbox_inches='tight')
