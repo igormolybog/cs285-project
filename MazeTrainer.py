@@ -67,7 +67,7 @@ class RL_Trainer(object):
             
         # Maximum length for episodes
         self.params['ep_len'] = self.params['ep_len']
-
+    
         # Enviroment Dimension details
         # Is this env continuous, or self.discrete?
         self.params['agent_params']['discrete'] = True
@@ -89,24 +89,26 @@ class RL_Trainer(object):
 
 
     def step_env(self):
-        
+            
         # Query action from agent
         action = self.agent.compute_action(self.agent.current_obs)
        
         # Make a step in the enviroment
-        obs, _, done, info = self.env.step(action)
+        next_obs, _, done, info = self.env.step(action)
        
         # Compute the reward
         reward = self.agent.reward_function(self.agent.current_obs, action)
         
         # Store transition in the buffer
-        self.replay_buffer.store_effect(self.replay_buffer_idx, action, reward, done) #(?)
+        transition = []
+        transition. append(Path(self.agent.current_obs, action, reward, next_obs, done))
+        self.replay_buffer.add_rollouts(transition) 
 
         # Update agent current position
         if done is True:
             self.agent.current_obs = self.env.reset()
         else:
-            self.agent.current_obs = obs
+            self.agent.current_obs = next_obs
         
         return
     
@@ -131,12 +133,15 @@ class RL_Trainer(object):
             print("\n\n********** Iteration %i ************"%itr)
 
             # Collect Training Transitions using the Agent
-            paths, envsteps_this_batch = self.collect_training_trajectories(itr, self.agent, self.params['batch_size'])
-
+            # If online then we make a step in the enviroment and record the transition, else we simulate a 'batch_size' number of trajectories
+            if self.params['online']:
+                self.step_env
+                envsteps_this_batch = 1
+            else: 
+                envsteps_this_batch = self.collect_training_trajectories(itr, self.agent, self.params['batch_size'])
+                            
             self.total_envsteps += envsteps_this_batch
 
-            # Add collected data to replay buffer
-            self.replay_buffer.add_rollouts(paths)
 
             # Train agent (using sampled data from replay buffer)
             all_losses = self.train_agent()
@@ -159,9 +164,13 @@ class RL_Trainer(object):
         
         print("\nCollecting data to be used for training...")
         
+        # Simulate Trajectories
         paths, envsteps_this_batch = sample_trajectories(self.env, collect_policy, batch_size, self.params['ep_len'])
 
-        return paths, envsteps_this_batch
+        # Add Simulated Sample Paths to Replay Buffer
+        self.replay_buffer.add_rollouts(paths)
+        
+        return envsteps_this_batch
 
 
     def train_agent(self):
@@ -170,8 +179,7 @@ class RL_Trainer(object):
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
 
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch =  self.replay_buffer.sample_recent_data(self.params['train_batch_size'])
-            
-            
+                     
             loss = self.agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
             
             total_loss.append(loss)
