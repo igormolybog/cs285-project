@@ -13,6 +13,10 @@ class ArgMax(object):
     def get_action(self, obs, t=None):
         return self._get_action(obs)
 
+    def fit(self, batch):
+        self.q_function.fit(batch)
+        return None
+
     def _get_action(self, obs):
         q_obs = q_function(obs)
         if isinstance(q_obs, np.ndarray):
@@ -32,5 +36,3 @@ class EpsilonGreedyAM(ArgMax):
             return int(q_function.NUM_ACTIONS*np.random.random())
         else:
             return self._get_action(self, obs)
-
-    
