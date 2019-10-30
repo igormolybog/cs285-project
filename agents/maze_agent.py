@@ -37,8 +37,8 @@ class MazeAgent(object):
         return [reward, action]
     
 
-    def train(self):
+    def train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch):
 
-        pass
+        self.policy.fit(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
         
         return

@@ -32,6 +32,96 @@ class LookUpTable(np.ndarray):
               
         return buffer  + arr 
     
+
+############################################
+############################################
+
+def sample_trajectory(env, agent, max_path_length, render=False, render_mode=('rgb_array')):
+ 
+    # initialize env for the beginning of a new rollout
+    ob = env.reset() # HINT: should be the output of resetting the env
+
+    # init vars
+    obs, acs, rewards, next_obs, terminals = [], [], [], [], []
+    steps = 0
+    while True:
+
+        # use the most recent ob to decide what to do
+        obs.append(ob)
+        ac = agent.compute_action(ob) 
+        ac = ac[0]
+        acs.append(ac)
+
+        # take that action and record results
+        ob_new, _, done, _ = env.step(ac)
+        
+        rew = agent.reward_function(ob, ac)
+        ob = ob_new
+        
+        # record result of taking that action
+        steps += 1
+        next_obs.append(ob)
+        rewards.append(rew)
+
+        # End the rollout if the rollout ended 
+        # Note that the rollout can end due to done, or due to max_path_length
+        if(done is True or steps == max_path_length):
+            rollout_done = True # HINT: this is either 0 or 1
+        else:
+            rollout_done = False
+        terminals.append(rollout_done)
+        
+        if rollout_done: 
+            break
+
+    return Path(obs, acs, rewards, next_obs, terminals)
+
+def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False, render_mode=('rgb_array')):
+
+    timesteps_this_batch = 0
+    paths = []
+    while timesteps_this_batch < min_timesteps_per_batch:
+        path = sample_trajectory(env, policy, max_path_length)
+        timesteps_this_batch += get_pathlength(path)
+        paths.append(path)
+        
+    return paths, timesteps_this_batch
+
+
+############################################
+############################################
+
+def Path(obs, acs, rewards, next_obs, terminals):
+    """
+        Take info (separate arrays) from a single rollout
+        and return it in a single dictionary
+    """
+    return {"observation" : np.array(obs, dtype=np.float32),
+            "reward" : np.array(rewards, dtype=np.float32),
+            "action" : np.array(acs, dtype=np.float32),
+            "next_observation": np.array(next_obs, dtype=np.float32),
+            "terminal": np.array(terminals, dtype=np.float32)}
+
+
+def convert_listofrollouts(paths):
+    """
+        Take a list of rollout dictionaries
+        and return separate arrays,
+        where each array is a concatenation of that array from across the rollouts
+    """
+    observations = np.concatenate([path["observation"] for path in paths])
+    actions = np.concatenate([path["action"] for path in paths])
+    next_observations = np.concatenate([path["next_observation"] for path in paths])
+    terminals = np.concatenate([path["terminal"] for path in paths])
+    concatenated_rewards = np.concatenate([path["reward"] for path in paths])
+    unconcatenated_rewards = [path["reward"] for path in paths]
+    return observations, actions, next_observations, terminals, concatenated_rewards, unconcatenated_rewards
+
+############################################
+############################################
+
+def get_pathlength(path):
+    return len(path["reward"])
     
 def sample_bernoulli(p):
     
