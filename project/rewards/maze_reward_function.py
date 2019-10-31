@@ -13,23 +13,19 @@ class MazeRewardFunction(BaseRewardFunction):
      def __init__(self, params):
         super(MazeRewardFunction, self).__init__()
         
-     
-        self.ob_dim = params['ob_dim']
-        self.ac_dim = params['ac_dim']
         
-        self.maze_size = params['maze_size']
-        self.maze_end = params['maze_end']
+        self.params = params
         
         self.parametric_reward = LookUpTable((self.ob_dim, self.ac_dim))
         
        
      def __call__(self, obs, acs):
                           
-        if obs == self.maze_end:
+        if obs == self.params['maze_goal']:
             return 1
          
         else:  
-            base_reward = -0.1 / (self.maze_end[0]*self.maze_end[1])
+            base_reward = -0.1 / (self.params['maze_goal'][0]*self.params['maze_goal'][1])
             
             total_reward = base_reward + self.parametric_reward(obs)[acs]
             return total_reward

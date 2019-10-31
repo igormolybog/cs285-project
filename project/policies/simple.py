@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from .basepolicy import BasePolicy
+from .base_policy import BasePolicy
 
 class RandomPolicy(BasePolicy):
     

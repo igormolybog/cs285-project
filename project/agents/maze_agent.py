@@ -18,18 +18,15 @@ class MazeAgent(object):
         #self.critic = DQNCritic(sess, agent_params, self.optimizer_spec)
         self.policy = agent_params['policy']
      
-        self.reward_function = MazeRewardFunction(agent_params['reward_spec'])
+        self.reward_function = MazeRewardFunction(agent_params['reward_params'])
         
-    def compute_action(self, obs):
+    def get_action(self, obs):
        
         self.current_obs = obs
        
         action = self.policy.get_action(self.current_obs)
-        action = action[0]
-        
-        reward = self.reward_function.compute_reward(self.current_obs, action)
-        
-        return [reward, action]
+               
+        return action
     
 
     def train(self, ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch):

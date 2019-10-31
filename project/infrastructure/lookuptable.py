@@ -11,7 +11,7 @@ class LookUpTable(np.ndarray):
     '''
     def __new__(cls, *args, **kwargs):
         '''called before __init__'''
-        return super(Lookuptable, cls).__new__(cls, *args, **kwargs)
+        return super(LookUpTable, cls).__new__(cls, *args, **kwargs)
 
     def __init__(self, *args, **kwargs):
         '''

@@ -42,10 +42,11 @@ class Obj(object):
         self.params['agent_class'] = MazeAgent
         self.params['agent_params'] = {'agent_type':    params['agent_type'],
                                        'discrete':      True,  # Is this env continuous, or self.discrete?
-                                       'ac_dim':        self.params['env'].action_space.n,
-                                       'ob_dim':        self.params['env'].observation_space.shape
+                                       'ob_dim':        self.params['env'].observation_space.shape,
+                                       'ac_dim':        self.params['env'].action_space.n
                                       }
-                      
+          
+        
         # Policy
         self.params['agent_params']['policy'] = RandomPolicy(self.params['agent_params']) # (!)(!)(!)
         
@@ -53,9 +54,19 @@ class Obj(object):
         # Additions:
         self.params['render'] = True
         self.params['special'] = {'solved_t': None,
-                                 'streak_to_end': None
+                                  'streak_to_end': None,
+                                  'maze_size': None,
+                                  'maze_goal': None
                                  }
         
+        # Reward Function:
+        self.params['agent_params']['reward_params'] = {'ob_dim':        self.params['env'].observation_space.shape,
+                                                        'ac_dim':        self.params['env'].action_space.n,
+                                                        'maze_size':     self.params['special']['maze_size'],
+                                                        'maze_goal':     self.params['special']['maze_goal']
+                                                        }
+
+
         # Trainer
         self.rl_trainer = MazeTrainer(self.params)
            
@@ -125,7 +136,8 @@ def main():
     
     RL_OBJ['special']['solved_t'] = np.prod(MAZE_SIZE, dtype=int)
     RL_OBJ['special']['streak_to_end'] = 120
-    
+    RL_OBJ['special']['maze_size'] = MAZE_SIZE
+    RL_OBJ['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
     RL_OBJ.run_training_loop()
 
 
