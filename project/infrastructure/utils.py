@@ -36,14 +36,14 @@ class LookUpTable(np.ndarray):
 ############################################
 ############################################
 
-def sample_trajectory(env, agent, max_path_length, render=False, render_mode=('rgb_array')):
+def sample_trajectory(env, agent, max_path_length, render=False):
  
     # initialize env for the beginning of a new rollout
     ob = env.reset() # HINT: should be the output of resetting the env
-
+    agent.current_t = 0
     # init vars
     obs, acs, rewards, next_obs, terminals = [], [], [], [], []
-    steps = 0
+    
     while True:
 
         # use the most recent ob to decide what to do
@@ -58,14 +58,18 @@ def sample_trajectory(env, agent, max_path_length, render=False, render_mode=('r
         rew = agent.reward_function(ob, ac)
         ob = ob_new
         
+        # Rendering
+        if render:
+            env.render()
+            
         # record result of taking that action
-        steps += 1
+        agent.current_t += 1
         next_obs.append(ob)
         rewards.append(rew)
 
         # End the rollout if the rollout ended 
         # Note that the rollout can end due to done, or due to max_path_length
-        if(done is True or steps == max_path_length):
+        if(done is True or agent.current_t == max_path_length):
             rollout_done = True # HINT: this is either 0 or 1
         else:
             rollout_done = False
@@ -76,12 +80,12 @@ def sample_trajectory(env, agent, max_path_length, render=False, render_mode=('r
 
     return Path(obs, acs, rewards, next_obs, terminals)
 
-def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False, render_mode=('rgb_array')):
+def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False):
 
     timesteps_this_batch = 0
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
-        path = sample_trajectory(env, policy, max_path_length)
+        path = sample_trajectory(env, policy, max_path_length, render)
         timesteps_this_batch += get_pathlength(path)
         paths.append(path)
         

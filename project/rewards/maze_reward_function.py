@@ -3,7 +3,8 @@ import time
 import copy
 
 from .base_reward_function import BaseRewardFunction
-from .utils import *
+from project.infrastructure.lookuptable import LookUpTable
+
 ############################################
 ############################################
 

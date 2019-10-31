@@ -1,0 +1,5 @@
+setup_project.py
+project_maze.egg-info/PKG-INFO
+project_maze.egg-info/SOURCES.txt
+project_maze.egg-info/dependency_links.txt
+project_maze.egg-info/top_level.txt

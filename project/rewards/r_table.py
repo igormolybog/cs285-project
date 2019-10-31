@@ -1,5 +1,5 @@
 import numpy as np
-from infrastructure.lookuptable import LookUpTable
+from project.infrastructure.lookuptable import LookUpTable
 
 
 class r_table(LookUpTable):

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Lookuptable(np.ndarray):
+class LookUpTable(np.ndarray):
     '''
         usage:
             q_function = Lookuptable((3, 4, 2))
