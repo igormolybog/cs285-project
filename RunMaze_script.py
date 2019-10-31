@@ -39,6 +39,7 @@ class Obj(object):
             self.monitor = Monitor(self.params['env'], self.params['recording_folder'], force=True)
 
         # Agent
+<<<<<<< HEAD
 
         ob_dim = self.params['env'].observation_space.shape
         ac_dim = self.params['env'].action_space.n
@@ -54,6 +55,17 @@ class Obj(object):
         #                               }
         # Policy
         # self.params['agent_params']['policy'] = RandomPolicy(self.params['agent_params']) # (!)(!)(!)
+=======
+        self.params['agent_class'] = MazeAgent
+        self.params['agent_params'] = {'agent_type':    params['agent_type'],
+                                       'discrete':      True,  # Is this env continuous, or self.discrete?
+                                       'ac_dim':        self.params['env'].action_space.n,
+                                       'ob_dim':        self.params['env'].observation_space.shape
+                                      }
+
+        # Policy
+        self.params['agent_params']['policy'] = RandomPolicy(self.params['agent_params']) # (!)(!)(!)
+>>>>>>> 844e4949081f4b061a7ed95f75167b5a2bb2f4b4
 
 
         # Additions:
