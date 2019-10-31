@@ -10,6 +10,7 @@ import numpy as np
 from project.infrastructure.maze_trainer import  MazeTrainer
 from project.agents.maze_agent import MazeAgent
 from project.policies.simple import RandomPolicy
+from project.policies.argmax import ArgMax
 
 # Gym registration (?)
 import gym
@@ -39,17 +40,16 @@ class Obj(object):
             self.monitor = Monitor(self.params['env'], self.params['recording_folder'], force=True)
 
         # Agent
-        self.params['agent_class'] = MazeAgent
-        self.params['agent_params'] = {'agent_type':    params['agent_type'],
-                                       'discrete':      True,  # Is this env continuous, or self.discrete?
-                                       'ob_dim':        self.params['env'].observation_space.shape,
-                                       'ac_dim':        self.params['env'].action_space.n
-                                      }
-
-        # Policy
-        self.params['agent_params']['policy'] = RandomPolicy(self.params['agent_params']) # (!)(!)(!)
 
 
+        ob_dim = self.params['env'].observation_space.shape
+        ac_dim = self.params['env'].action_space.n
+        shape = ob_dim+(ac_dim,)
+        self.agent_factory = lambda initial_state, reward_list: MazeAgent(initial_state,
+                                                        ArgMax(Q_table(shape)),
+                                                        Q_reward.cast(np.array(reward_list).reshape(shape)))
+        
+                
         # Additions:
         self.params['render'] = True
         self.params['special'] = {'solved_t': None,
@@ -58,14 +58,6 @@ class Obj(object):
                                   'maze_goal': None
                                  }
         
-        # Reward Function:
-        self.params['agent_params']['reward_params'] = {'ob_dim':        self.params['env'].observation_space.shape,
-                                                        'ac_dim':        self.params['env'].action_space.n,
-                                                        'maze_size':     self.params['special']['maze_size'],
-                                                        'maze_goal':     self.params['special']['maze_goal']
-                                                        }
-
-
         # Trainer
         self.rl_trainer = MazeTrainer(self.params)
 
@@ -78,7 +70,19 @@ class Obj(object):
     def run_evaluation_loop(self):
         self.rl_trainer.evaluate_trainer(eval_policy = self.rl_trainer.agent)
 
+
     def __call__(self, argument):
+        agent = self.agent_factory(self.env.reset(), argument)
+        
+        # Initializing agent on the trainer
+        self.rl_trainer.agent = agent
+        
+        # Training
+        self.run_training_loop()
+        
+        # Evaluation
+        self.run_evaluation_loop()
+        
         real_value = 0 #TODO
         return real_value
 

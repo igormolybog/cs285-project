@@ -37,13 +37,11 @@ class MazeTrainer(object):
         #self.best_mean_episode_reward = -float('inf')
             
         # Initializing Agent
-        agent_class = self.params['agent_class']
-        self.agent = agent_class(self.env.reset(), self.params['agent_params'])
+        self.agent = None
 
         # Initializing TF variables
         #tf.global_variables_initializer().run(session=self.sess)
 
-    
     def run_training_loop(self, n_iter, collect_policy):
 
         
@@ -109,7 +107,8 @@ class MazeTrainer(object):
             self.env.render()
                 
         # Update agent current position    
-        if done is True:
+        if done is True:          
+            reward += self.agent.reward_function(next_obs, action) #collecting terminal reward
             self.agent.current_t = 0
             self.agent.current_obs = self.env.reset()
         else:
