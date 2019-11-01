@@ -6,7 +6,6 @@ from project.rewards.maze_reward_function import MazeRewardFunction
 class MazeAgent(object):
     def __init__(self, initial_state, policy, reward_function):
 
-
         # Agents info: current state and current time in the rollout
         self.current_ob = initial_state
         self.current_t = 0
@@ -17,6 +16,12 @@ class MazeAgent(object):
         action = self.policy.get_action(obs)
         return action
 
+    def advance_time():
+        self.current_t += 1
+        
+   def reset_time():
+       self.current_t = 0
+    
     def set_ob(self, ob):
         self.current_ob = ob
 

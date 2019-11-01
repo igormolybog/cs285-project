@@ -100,9 +100,7 @@ class MazeTrainer(object):
         # Store transition in the buffer
         transition = []
         transition.append(Path([current_ob], [action], [reward], [next_ob], [done]))
-        self.replay_buffer.add_rollouts(transition)
-
-        agent.set_ob(next_ob)
+        self.replay_buffer.add_rollouts(transition[0])
 
         # Rendering the Maze
         if self.params['render']:
@@ -111,11 +109,11 @@ class MazeTrainer(object):
         # Update agent current position
         if done is True:
             reward += agent.reward(next_ob, action) #collecting terminal reward ???? this does not do anywhere
-            agent.current_t = 0
-            agent.current_obs = env.reset()
+            agent.reset_time()
+            agent.set_ob(env.reset())
         else:
-            agent.current_t += 1
-            agent.current_obs = next_ob
+            agent.advance_time()
+            agent.set_ob(next_ob)
         return # ?????
 
 
@@ -159,7 +157,7 @@ class MazeTrainer(object):
          num_streaks = 0
          for episode in range(self.params['eval_batch_size']):
 
-              path = sample_trajectory(env, eval_policy, self.params['ep_len'], self.params['render'])
+              path = sample_trajectory(env, agent, self.params['ep_len'], self.params['render'])
 
               envsteps_this_episode = get_pathlength(path)
 
