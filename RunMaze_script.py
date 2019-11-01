@@ -49,7 +49,7 @@ class Objective(object):
 
         # Agent
         self.agent_factory = lambda initial_state, reward_list, shape: MazeAgent(initial_state,
-                                                        ArgMax(Q_table(shape)),
+                                                        ArgMax(Q_table.cast(np.zeros(shape))),
                                                         R_table.cast(np.array(reward_list).reshape(shape)))
 
         # Environment
