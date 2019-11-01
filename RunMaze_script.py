@@ -11,6 +11,9 @@ from project.infrastructure.maze_trainer import  MazeTrainer
 from project.agents.maze_agent import MazeAgent
 from project.policies.simple import RandomPolicy
 from project.policies.argmax import ArgMax
+from project.q_functions.q_table import Q_table
+from project.rewards.r_table import R_table
+
 
 # Gym registration (?)
 import gym
@@ -23,7 +26,7 @@ from gym.wrappers.monitor import Monitor
 
 class Objective(object):
 
-    def __init__(self, shape):
+    def __init__(self, params):
 
         self.params = params
 
@@ -47,7 +50,7 @@ class Objective(object):
         # Agent
         self.agent_factory = lambda initial_state, reward_list, shape: MazeAgent(initial_state,
                                                         ArgMax(Q_table(shape)),
-                                                        Q_reward.cast(np.array(reward_list).reshape(shape)))
+                                                        R_table.cast(np.array(reward_list).reshape(shape)))
 
         # Environment
         # Make the gym environment
@@ -62,12 +65,14 @@ class Objective(object):
             argument is a list that will be cast into a table
         '''
         env = self.env_factory()
+        env.seed(self.params['seed'])
 
         # Ideally, we would create here an ob_placeholder and ac_placeholder,
         # and pass it to the agent (instead of shape)
         ob_dim = env.observation_space.shape
         ac_dim = env.action_space.n
-        shape = ob_dim+(ac_dim,)
+        maze_size = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
+        shape = maze_size+(ac_dim,)
 
         agent = self.agent_factory(env.reset(), argument, shape)
 
@@ -116,22 +121,20 @@ def main():
     params = vars(args)
 
     # Set random seeds
-    seed = self.params.pop('seed')
-    self.env.seed(seed)
+    seed = params['seed']
     np.random.seed(seed)
     #tf.set_random_seed(self.params['seed'])
     #self.mean_episode_reward = -float('nan')
     #self.best_mean_episode_reward = -float('inf')
 
     #Some additional parameters
+    params['training_begins'] = 10
     params['recording_folder'] ="C:/Repositories/cs285-project/data"
-
-    # Defining our RL_OBJECT:
 
     objective = Objective(params)
 
     # Seting some of the parameters
-    MAZE_SIZE = tuple((RL_OBJ.params['env'].observation_space.high + np.ones(RL_OBJ.params['env'].observation_space.shape)).astype(int))
+    MAZE_SIZE = (10, 10)
     MAX_T = np.prod(MAZE_SIZE, dtype=int) * 100
     NUM_EPISODES = 50000
 
@@ -141,13 +144,13 @@ def main():
     objective.params['batch_size'] = 1
     objective.params['eval_batch_size'] = NUM_EPISODES
 
-    objective['special']['solved_t'] = np.prod(MAZE_SIZE, dtype=int)
-    objective['special']['streak_to_end'] = 120
+    # objective['special']['solved_t'] = np.prod(MAZE_SIZE, dtype=int)
+    # objective['special']['streak_to_end'] = 120
+    #
+    # objective['special']['maze_size'] = MAZE_SIZE
+    # objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
 
-    objective['special']['maze_size'] = MAZE_SIZE
-    objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
-
-    from optimizers.initialize import default_reward_table
+    from project.optimizers.initialize import default_reward_table
     objective(list(default_reward_table(MAZE_SIZE+(4,)).flatten()))
 
 

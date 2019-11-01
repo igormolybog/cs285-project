@@ -52,7 +52,7 @@ class MazeTrainer(object):
             # Collect Training Transitions using the Agent
             # If online then we make a step in the enviroment and record the transition, else we simulate a 'batch_size' number of trajectories
             if self.params['online']:
-                self.step_env()
+                self.step_env(agent, env)
                 envsteps_this_batch = 1
             else:
                 paths, envsteps_this_batch = self.collect_simulation_trajectories(itr, agent, env, self.params['batch_size'])
@@ -64,13 +64,14 @@ class MazeTrainer(object):
             if itr >= self.params['training_begins']:
                 start_train = True
             else:
-                start_train= False
+                start_train = False
 
             if start_train:
                 all_losses = self.run_learner(agent)
 
             # log/save
-            if start_train and self.logmetrics:
+            # if start_train and self.logmetrics:
+            if start_train:
                 self.simple_training_log_function(itr, all_losses)
 
             if self.params['evaluate_after_each_iter']:
@@ -85,14 +86,14 @@ class MazeTrainer(object):
         action = agent.get_action(agent.current_obs)
 
         # Make a step in the enviroment
-        next_obs, _, done, info = env.step(action)
+        next_obs, _, done, info = env.step(env.ACTION[action])
 
         # Compute the reward
         reward = agent.reward(agent.current_obs, action)
 
         # Store transition in the buffer
         transition = []
-        transition.append(Path(agent.current_obs, action, reward, next_obs, done))
+        transition.append(Path([agent.current_obs], [action], [reward], [next_obs], [done]))
         self.replay_buffer.add_rollouts(transition)
 
         # Rendering the Maze

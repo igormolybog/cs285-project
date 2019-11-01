@@ -18,7 +18,7 @@ class MazeAgent(object):
         self.current_obs = obs
 
         action = self.policy.get_action(self.current_obs)
-
+        
         return action
 
 
