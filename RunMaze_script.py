@@ -20,36 +20,16 @@ import gym_maze.envs
 from gym import wrappers
 from gym.wrappers.monitor import Monitor
 
-class Obj(object):
 
-    def __init__(self, params):
+class Objective(object):
+
+    def __init__(self, shape):
 
         self.params = params
 
         # ALl batches used for training
         self.params['train_batch_size'] = params['batch_size']
-        #self.params['env_wrappers'] = self.agent_params['env_wrappers']
 
-        # Environment
-         # Make the gym environment
-        env_wrap = gym.make(self.params['env_name'])
-        self.params['env'] = env_wrap.env
-
-        # Monitor
-        if  self.params['enable_recording']:
-            self.monitor = Monitor(self.params['env'], self.params['recording_folder'], force=True)
-
-        # Agent
-
-
-        ob_dim = self.params['env'].observation_space.shape
-        ac_dim = self.params['env'].action_space.n
-        shape = ob_dim+(ac_dim,)
-        self.agent_factory = lambda initial_state, reward_list: MazeAgent(initial_state,
-                                                        ArgMax(Q_table(shape)),
-                                                        Q_reward.cast(np.array(reward_list).reshape(shape)))
-        
-                
         # Additions:
         self.params['render'] = True
         self.params['special'] = {'solved_t': None,
@@ -57,33 +37,46 @@ class Obj(object):
                                   'maze_size': None,
                                   'maze_goal': None
                                  }
-        
-        # Trainer
-        self.rl_trainer = MazeTrainer(self.params)
 
 
-    def run_training_loop(self):
-        self.rl_trainer.run_training_loop( self.params['n_iter'],
-                                           collect_policy = self.rl_trainer.agent,
-                                         )
 
-    def run_evaluation_loop(self):
-        self.rl_trainer.evaluate_trainer(eval_policy = self.rl_trainer.agent)
+        # Monitor
+        # if  self.params['enable_recording']:
+        #     self.monitor = Monitor(self.params['env'], self.params['recording_folder'], force=True)
+
+        # Agent
+        self.agent_factory = lambda initial_state, reward_list, shape: MazeAgent(initial_state,
+                                                        ArgMax(Q_table(shape)),
+                                                        Q_reward.cast(np.array(reward_list).reshape(shape)))
+
+        # Environment
+        # Make the gym environment
+        self.env_factory = lambda: gym.make(self.params.pop('env_name')).env
+
+        self.trainer = MazeTrainer(self.params)
+
 
 
     def __call__(self, argument):
-        agent = self.agent_factory(self.env.reset(), argument)
-        
-        # Initializing agent on the trainer
-        self.rl_trainer.agent = agent
-        
-        # Training
-        self.run_training_loop()
-        
-        # Evaluation
-        self.run_evaluation_loop()
-        
-        real_value = 0 #TODO
+        '''
+            argument is a list that will be cast into a table
+        '''
+        env = self.env_factory()
+
+        # Ideally, we would create here an ob_placeholder and ac_placeholder,
+        # and pass it to the agent (instead of shape)
+        ob_dim = env.observation_space.shape
+        ac_dim = env.action_space.n
+        shape = ob_dim+(ac_dim,)
+
+        agent = self.agent_factory(env.reset(), argument, shape)
+
+        self.trainer.train(agent, env, self.params['n_iter'])
+
+        self.trainer.evaluate(agent, env)
+
+        # TODO: WHAT DO WE RETURN??
+        real_value = 0
         return real_value
 
 def main():
@@ -122,13 +115,20 @@ def main():
     # convert to dictionary
     params = vars(args)
 
+    # Set random seeds
+    seed = self.params.pop('seed')
+    self.env.seed(seed)
+    np.random.seed(seed)
+    #tf.set_random_seed(self.params['seed'])
+    #self.mean_episode_reward = -float('nan')
+    #self.best_mean_episode_reward = -float('inf')
 
     #Some additional parameters
     params['recording_folder'] ="C:/Repositories/cs285-project/data"
-    params['env'] = None
 
     # Defining our RL_OBJECT:
-    RL_OBJ = Obj(params)
+
+    RL_OBJ = Objective(params)
 
     # Seting some of the parameters
     MAZE_SIZE = tuple((RL_OBJ.params['env'].observation_space.high + np.ones(RL_OBJ.params['env'].observation_space.shape)).astype(int))

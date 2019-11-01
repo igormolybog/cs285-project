@@ -1,6 +1,7 @@
 import numpy as np
+from base_policy import BasePolicy
 
-class ArgMax(object):
+class ArgMax(BasePolicy):
 
     def __init__(self, q_function, *args, **kwargs):
         '''

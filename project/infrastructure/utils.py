@@ -5,90 +5,59 @@ import copy
 ############################################
 ############################################
 
-class LookUpTable(np.ndarray):
-    
-    def __init__(self):
-        '''called before __init__'''
-        return super(LookUpTable,self).__init__()
-        
-        self.fill(0)
-        
-    def __call__(self, obs):
-        '''
-        observations are supposed to be the first indexes
-        obs is either a list or tuple or ndarray
-        '''
-        buffer = self
-        if isinstance(obs, (list, tuple, np.ndarray)):
-            for i in obs:
-                buffer = buffer[i,...]
-            return buffer
-        else :
-            return self[obs]
-        
-    def __add__(self, arr): 
-        
-        buffer = self
-              
-        return buffer  + arr 
-    
+def sample_trajectory(agent, env, max_path_length, render=False):
 
-############################################
-############################################
-
-def sample_trajectory(env, agent, max_path_length, render=False):
- 
     # initialize env for the beginning of a new rollout
     ob = env.reset() # HINT: should be the output of resetting the env
     agent.current_t = 0
     # init vars
     obs, acs, rewards, next_obs, terminals = [], [], [], [], []
-    
+
     while True:
 
         # use the most recent ob to decide what to do
         obs.append(ob)
-        ac = agent.compute_action(ob) 
+        ac = agent.get_action(ob)
         ac = ac[0]
         acs.append(ac)
 
         # take that action and record results
         ob_new, _, done, _ = env.step(ac)
-        
-        rew = agent.reward_function(ob, ac)
+
+        rew = agent.reward(ob, ac)
         ob = ob_new
-        
+
         # Rendering
         if render:
             env.render()
-            
+
         # record result of taking that action
         agent.current_t += 1
         next_obs.append(ob)
         rewards.append(rew)
 
-        # End the rollout if the rollout ended 
+        # End the rollout if the rollout ended
         # Note that the rollout can end due to done, or due to max_path_length
         if(done is True or agent.current_t == max_path_length):
             rollout_done = True # HINT: this is either 0 or 1
         else:
             rollout_done = False
         terminals.append(rollout_done)
-        
-        if rollout_done: 
+
+        if rollout_done:
             break
 
     return Path(obs, acs, rewards, next_obs, terminals)
 
-def sample_trajectories(env, policy, min_timesteps_per_batch, max_path_length, render=False):
+def sample_trajectories(agent, env, min_timesteps_per_batch, max_path_length, render=False):
 
     timesteps_this_batch = 0
     paths = []
     while timesteps_this_batch < min_timesteps_per_batch:
-        path = sample_trajectory(env, policy, max_path_length, render)
+        path = sample_trajectory(env, agent, max_path_length, render)
         timesteps_this_batch += get_pathlength(path)
         paths.append(path)
-        
+
     return paths, timesteps_this_batch
 
 
@@ -126,13 +95,13 @@ def convert_listofrollouts(paths):
 
 def get_pathlength(path):
     return len(path["reward"])
-    
+
 def sample_bernoulli(p):
-    
+
      if np.random.random() <= p   :
          return True
      else:
-        return False     
+        return False
 
 
 def normalize(data, mean, std, eps=1e-8):
