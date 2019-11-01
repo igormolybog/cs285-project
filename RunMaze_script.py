@@ -128,7 +128,7 @@ def main():
 
     # Defining our RL_OBJECT:
 
-    RL_OBJ = Objective(params)
+    objective = Objective(params)
 
     # Seting some of the parameters
     MAZE_SIZE = tuple((RL_OBJ.params['env'].observation_space.high + np.ones(RL_OBJ.params['env'].observation_space.shape)).astype(int))
@@ -136,18 +136,19 @@ def main():
     NUM_EPISODES = 50000
 
 
-    RL_OBJ.params['n_iter'] = NUM_EPISODES
-    RL_OBJ.params['ep_len'] = MAX_T
-    RL_OBJ.params['batch_size'] = 1
-    RL_OBJ.params['eval_batch_size'] = NUM_EPISODES
+    objective.params['n_iter'] = NUM_EPISODES
+    objective.params['ep_len'] = MAX_T
+    objective.params['batch_size'] = 1
+    objective.params['eval_batch_size'] = NUM_EPISODES
 
-    RL_OBJ['special']['solved_t'] = np.prod(MAZE_SIZE, dtype=int)
-    RL_OBJ['special']['streak_to_end'] = 120
+    objective['special']['solved_t'] = np.prod(MAZE_SIZE, dtype=int)
+    objective['special']['streak_to_end'] = 120
 
-    RL_OBJ['special']['maze_size'] = MAZE_SIZE
-    RL_OBJ['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
+    objective['special']['maze_size'] = MAZE_SIZE
+    objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
 
-    RL_OBJ.run_training_loop()
+    from optimizers.initialize import default_reward_table
+    objective(list(default_reward_table(MAZE_SIZE+(4,)).flatten()))
 
 
 if __name__ == "__main__":
