@@ -8,19 +8,20 @@ class MazeAgent(object):
 
 
         # Agents info: current state and current time in the rollout
-        self.current_obs = initial_state
+        self.current_ob = initial_state
         self.current_t = 0
         self.policy = policy
         self.reward = reward_function
 
     def get_action(self, obs):
-
-        self.current_obs = obs
-
-        action = self.policy.get_action(self.current_obs)
-        
+        action = self.policy.get_action(obs)
         return action
 
+    def set_ob(self, ob):
+        self.current_ob = ob
+
+    def get_ob(self):
+        return self.current_ob
 
     def train(self, ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch):
 

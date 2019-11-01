@@ -82,19 +82,27 @@ class MazeTrainer(object):
 
     def step_env(self, agent, env):
 
+        current_ob = agent.get_ob()
+
+        print('STEP')
+
+        print('observe: '+str(current_ob))
+        print('q(obs): '+str(agent.policy.q_function(current_ob)))
         # Query action from agent
-        action = agent.get_action(agent.current_obs)
-
+        action = agent.get_action(current_ob)
+        print('action: '+str(action))
         # Make a step in the enviroment
-        next_obs, _, done, info = env.step(env.ACTION[action])
-
+        next_ob, _, done, info = env.step(env.ACTION[action])
+        print('next will observe: '+str(next_ob))
         # Compute the reward
-        reward = agent.reward(agent.current_obs, action)
+        reward = agent.reward(current_ob, action)
 
         # Store transition in the buffer
         transition = []
-        transition.append(Path([agent.current_obs], [action], [reward], [next_obs], [done]))
+        transition.append(Path([current_ob], [action], [reward], [next_ob], [done]))
         self.replay_buffer.add_rollouts(transition)
+
+        agent.set_ob(next_ob)
 
         # Rendering the Maze
         if self.params['render']:
@@ -102,12 +110,12 @@ class MazeTrainer(object):
 
         # Update agent current position
         if done is True:
-            reward += agent.reward(next_obs, action) #collecting terminal reward
+            reward += agent.reward(next_ob, action) #collecting terminal reward ???? this does not do anywhere
             agent.current_t = 0
             agent.current_obs = env.reset()
         else:
             agent.current_t += 1
-            agent.current_obs = next_obs
+            agent.current_obs = next_ob
         return # ?????
 
 
@@ -132,7 +140,6 @@ class MazeTrainer(object):
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
 
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch =  self.replay_buffer.sample_recent_data(self.params['train_batch_size'])
-
             loss = agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
 
         return loss

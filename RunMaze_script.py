@@ -97,7 +97,7 @@ def main():
     parser.add_argument('--ep_len', type=int, default=200)
     parser.add_argument('--n_iter', type=int, default = 1)
 
-    parser.add_argument('--batch_size', type=int, default=50)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--eval_batch_size', type=int, default=1000)
 
     parser.add_argument('--num_agent_train_steps_per_iter', type=int, default=1)
@@ -128,7 +128,7 @@ def main():
     #self.best_mean_episode_reward = -float('inf')
 
     #Some additional parameters
-    params['training_begins'] = 10
+    params['training_begins'] = 0
     params['recording_folder'] ="C:/Repositories/cs285-project/data"
 
     objective = Objective(params)
