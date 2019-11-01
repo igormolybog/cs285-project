@@ -16,10 +16,10 @@ class MazeAgent(object):
         action = self.policy.get_action(obs)
         return action
 
-    def advance_time():
+    def advance_time(self):
         self.current_t += 1
         
-   def reset_time():
+    def reset_time(self):
        self.current_t = 0
     
     def set_ob(self, ob):

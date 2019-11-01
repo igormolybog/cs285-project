@@ -90,7 +90,7 @@ class MazeTrainer(object):
         print('q(obs): '+str(agent.policy.q_function(current_ob)))
         # Query action from agent
         action = agent.get_action(current_ob)
-        print('action: '+str(action))
+        print('action: '+str(env.ACTION[action]))
         # Make a step in the enviroment
         next_ob, _, done, info = env.step(env.ACTION[action])
         print('next will observe: '+str(next_ob))
@@ -100,7 +100,7 @@ class MazeTrainer(object):
         # Store transition in the buffer
         transition = []
         transition.append(Path([current_ob], [action], [reward], [next_ob], [done]))
-        self.replay_buffer.add_rollouts(transition[0])
+        self.replay_buffer.add_rollouts(transition)
 
         # Rendering the Maze
         if self.params['render']:
@@ -115,7 +115,6 @@ class MazeTrainer(object):
             agent.advance_time()
             agent.set_ob(next_ob)
         return # ?????
-
 
     ####################################
     ####################################
@@ -138,6 +137,13 @@ class MazeTrainer(object):
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
 
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch =  self.replay_buffer.sample_recent_data(self.params['train_batch_size'])
+            
+            print(len(ob_batch))
+            print("")
+            check = [ob_batch[0], ac_batch[0], re_batch[0], next_ob_batch[0], terminal_batch[0]]
+            print(check)
+            input('Debug. Please wait...')
+            
             loss = agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
 
         return loss
@@ -151,7 +157,6 @@ class MazeTrainer(object):
 
         return
 
-
     def evaluate(self, agent, env):
 
          num_streaks = 0
@@ -160,7 +165,6 @@ class MazeTrainer(object):
               path = sample_trajectory(env, agent, self.params['ep_len'], self.params['render'])
 
               envsteps_this_episode = get_pathlength(path)
-
 
               if envsteps_this_episode <= self.params['special']['solved_t']:
                     num_streaks += 1

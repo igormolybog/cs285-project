@@ -34,14 +34,7 @@ class Objective(object):
         self.params['train_batch_size'] = params['batch_size']
 
         # Additions:
-        self.params['render'] = True
-        self.params['special'] = {'solved_t': None,
-                                  'streak_to_end': None,
-                                  'maze_size': None,
-                                  'maze_goal': None
-                                 }
-
-
+        self.params['render'] = False
 
         # Monitor
         # if  self.params['enable_recording']:
