@@ -73,6 +73,16 @@ def Path(obs, acs, rewards, next_obs, terminals):
             "terminal": np.array(terminals, dtype=np.float32)}
 
 
+def Transition(obs, acs, rewards, next_obs, terminals):
+    
+    assert(len(rewards) == 1)
+    
+    return {"observation" : np.array(obs, dtype=np.float32),
+            "reward" : np.array(rewards, dtype=np.float32),
+            "action" : np.array(acs, dtype=np.float32),
+            "next_observation": np.array(next_obs, dtype=np.float32),
+            "terminal": np.array(terminals, dtype=np.float32)}
+    
 def convert_listofrollouts(paths):
     """
         Take a list of rollout dictionaries

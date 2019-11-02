@@ -68,7 +68,9 @@ class Objective(object):
 
         self.trainer.train(agent, env, self.params['n_iter'])
 
-        self.trainer.evaluate(agent, env)
+        self.trainer.evaluate_training()
+        
+        #self.trainer.evaluate_agent(agent, env)
         
         print("Objective Call Loop executed with Success! \o/ ")
         # TODO: WHAT DO WE RETURN??

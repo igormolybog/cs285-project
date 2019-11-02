@@ -5,8 +5,8 @@ import numpy as np
 from collections import OrderedDict
 import copy
 
-from project.infrastructure.utils import Path, sample_trajectories, sample_trajectory, get_pathlength
-from project.infrastructure.replay_buffer import ReplayBuffer
+from project.infrastructure.utils import Path, Transition, sample_trajectories, sample_trajectory, get_pathlength
+from project.infrastructure.replay_buffer import NewReplayBuffer #, ReplayBuffer
 
 
 #import tensorflow as tf
@@ -31,8 +31,9 @@ class MazeTrainer(object):
         # self.agent = agent
 
         # Set Replay Buffer
-        self.replay_buffer = ReplayBuffer()
-
+        #self.replay_buffer = ReplayBuffer()
+        self.replay_buffer = NewReplayBuffer()
+ 
         # Initializing TF variables
         #tf.global_variables_initializer().run(session=self.sess)
 
@@ -76,7 +77,7 @@ class MazeTrainer(object):
                 self.simple_training_log_function(itr, all_losses)
 
             if self.params['evaluate_after_each_iter']:
-                self.evaluate(agent, env)
+                self.evaluate_agent(agent, env)
             
             if self.success_counter >= self.params['streaks_to_end']:
                 print("Agent has solved the maze " +str(self.params['streaks_to_end']) + " times in a row. Exiting training... ")
@@ -116,10 +117,9 @@ class MazeTrainer(object):
         rew.append(reward)
         n_ob.append(next_ob)
         term.append(done)
-        
-        transition = []
-        transition.append(Path(ob, ac, rew, n_ob, term))
-        self.replay_buffer.add_rollouts(transition)
+              
+        transition = Transition(ob, ac, rew, n_ob, term)
+        self.replay_buffer.add_transition(transition)
 
         # Rendering the Maze
         if self.params['render']:
@@ -192,7 +192,31 @@ class MazeTrainer(object):
         
         return
 
-    def evaluate(self, agent, env):
+    def evaluate_training(self):
+        
+        num_of_paths = len(self.replay_buffer.path_store)
+        
+        path_lengths = []
+        for path in self.replay_buffer.path_store:
+            path_lengths.append(len(path['reward']))
+              
+        Summary = {  "max_path_length" :  max(path_lengths),
+                     "min_path_length" :  min(path_lengths),
+                     "num_of_env_steps" : sum(path_lengths),
+                     "avg_path_length":  int(sum(path_lengths) / num_of_paths)
+                  }
+       
+        print("")
+        print("====================================")
+        print("Number of Env steps until training finished: " +str(Summary["num_of_env_steps"]))
+        print("Maximum number of steps until time out/success: " +str(Summary["max_path_length"]))
+        print("Minimum number of steps until time out/success: " +str(Summary["min_path_length"]))
+        print("Average number of rollout length in training: " +str(Summary["avg_path_length"]))
+        print("")
+     
+        return Summary
+   
+    def evaluate_agent(self, agent, env):
 
          num_streaks = 0
          shortest_path = self.params['ep_len']
