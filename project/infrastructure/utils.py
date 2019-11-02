@@ -5,49 +5,46 @@ import copy
 ############################################
 ############################################
 
-def sample_trajectory(agent, env, max_path_length, render=False):
+def sample_trajectory(env, agent, max_path_length, render=False):
 
     # initialize env for the beginning of a new rollout
-    ob = env.reset() # HINT: should be the output of resetting the env
-    agent.current_t = 0
+    agent.reset()
+    agent.set_ob(env.reset())
     # init vars
-    obs, acs, rewards, next_obs, terminals = [], [], [], [], []
+    obs ,acs, rews, n_obs, terms = [], [], [], [], []
 
     while True:
-
-        # use the most recent ob to decide what to do
-        obs.append(ob)
-        ac = agent.get_action(ob)
-        ac = ac[0]
-        acs.append(ac)
-
+       
+        current_ob = copy.deepcopy(agent.get_ob())
+        
+        action = agent.get_action(current_ob)
+        
         # take that action and record results
-        ob_new, _, done, _ = env.step(ac)
+        next_ob, _, done, _ = env.step(env.ACTION[action])
 
-        rew = agent.reward(ob, ac)
-        ob = ob_new
-
+        reward = agent.reward(current_ob, action)
+        if done is True:
+            reward += agent.reward(next_ob, action) #collecting terminal reward
+        
+        obs.append(current_ob)
+        acs.append(action)
+        rews.append(reward)
+        n_obs.append(next_ob)
+        terms.append(done)
+        
         # Rendering
         if render:
             env.render()
 
-        # record result of taking that action
-        agent.current_t += 1
-        next_obs.append(ob)
-        rewards.append(rew)
-
         # End the rollout if the rollout ended
-        # Note that the rollout can end due to done, or due to max_path_length
-        if(done is True or agent.current_t == max_path_length):
-            rollout_done = True # HINT: this is either 0 or 1
-        else:
-            rollout_done = False
-        terminals.append(rollout_done)
-
-        if rollout_done:
+        agent.accumulate_reward(reward)
+        if(done is True or agent.current_t == max_path_length):       
             break
-
-    return Path(obs, acs, rewards, next_obs, terminals)
+        else:   
+            agent.advance_time()
+            agent.set_ob(next_ob)
+            
+    return Path(obs, acs, rews, n_obs, terms)
 
 def sample_trajectories(agent, env, min_timesteps_per_batch, max_path_length, render=False):
 

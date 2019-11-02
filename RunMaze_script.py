@@ -33,9 +33,6 @@ class Objective(object):
         # ALl batches used for training
         self.params['train_batch_size'] = params['batch_size']
 
-        # Additions:
-        self.params['render'] = False
-
         # Monitor
         # if  self.params['enable_recording']:
         #     self.monitor = Monitor(self.params['env'], self.params['recording_folder'], force=True)
@@ -72,7 +69,8 @@ class Objective(object):
         self.trainer.train(agent, env, self.params['n_iter'])
 
         self.trainer.evaluate(agent, env)
-
+        
+        print("Objective Call Loop executed with Success! \o/ ")
         # TODO: WHAT DO WE RETURN??
         real_value = 0
         return real_value
@@ -104,7 +102,8 @@ def main():
 
     parser.add_argument('--online', default=True)
     parser.add_argument('--enable_recording', default = True)
-
+    parser.add_argument('--render', default = True)
+    
     parser.add_argument('--agent_type', default = 'DQN')
 
     parser.add_argument('--save_params', action='store_true')

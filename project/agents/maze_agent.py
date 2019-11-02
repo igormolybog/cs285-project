@@ -26,6 +26,9 @@ class MazeAgent(object):
        self.current_t = 0
        self.accumulated_reward = 0
     
+    def get_time(self):
+        return self.current_t
+    
     def set_ob(self, ob):
         self.current_ob = copy.deepcopy(ob)
 
@@ -34,7 +37,10 @@ class MazeAgent(object):
 
     def accumulate_reward(self, reward):
         self.accumulated_reward += copy.deepcopy(reward) 
-            
+      
+    def get_accumulated_reward(self):
+        return self.accumulated_reward
+    
     def train(self, ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch):
 
         self.policy.fit(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)

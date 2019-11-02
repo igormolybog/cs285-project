@@ -80,11 +80,13 @@ class MazeTrainer(object):
             
             if self.success_counter >= self.params['streaks_to_end']:
                 print("Agent has solved the maze " +str(self.params['streaks_to_end']) + " times in a row. Exiting training... ")
-                input("continue...")
                 break
+          
             
         print("Training Finished!")
-        input("Yay!")
+        print(" ")
+        input("Continue to Evaluation...")
+        
         return
 
     def step_env(self, agent, env):
@@ -99,12 +101,11 @@ class MazeTrainer(object):
         action = agent.get_action(current_ob)
         #print('action: '+str(env.ACTION[action]))
         # Make a step in the enviroment
-        next_ob, _, done, info = env.step(env.ACTION[action])
+        next_ob, _, done, _ = env.step(env.ACTION[action])
         #print('next will observe: '+str(next_ob))
         #print(' ')
         # Compute the reward
-        reward = agent.reward(current_ob, action)
-        
+        reward = agent.reward(current_ob, action)  
         if done is True:
             reward += agent.reward(next_ob, action) #collecting terminal reward
             
@@ -125,11 +126,11 @@ class MazeTrainer(object):
             env.render()
 
         # Update agent current position
-        if (done is True) or (agent.current_t == self.params['ep_len']):   
-            agent.accumulate_reward(reward)
-            
+        agent.accumulate_reward(reward)
+        if (done is True or agent.current_t == self.params['ep_len']):   
+                    
             if done:
-                 print("Episode finished sucessfully after " +str(agent.current_t) + " time steps with total reward = " +str(agent.accumulated_reward) )   
+                 print("Episode finished sucessfully after " +str(agent.get_time()) + " time steps with total reward = " +str(agent.get_accumulated_reward()) )   
                  
                  if agent.current_t <= self.params['max_sucess_time']:
                      self.success_counter += 1
@@ -137,14 +138,13 @@ class MazeTrainer(object):
                      self.success_counter = 0 #reset the counter
                  
             else:
-                print("Agent timed out after %f time steps with total reward = %f" % (agent.current_t, agent.accumulated_reward) )   
+                print("Agent timed out after %f time steps with total reward = %f" % (agent.get_time(), agent.get_accumulated_reward()) )   
                 
             agent.reset()
             agent.set_ob(env.reset())
                 
         else:
-            agent.accumulate_reward(reward)
-            print("Agent at time step %f, with running reward = %f" % (agent.current_t, agent.accumulated_reward) )   
+            print("Agent at time step %f, with running reward = %f" % (agent.get_time(), agent.get_accumulated_reward()) )   
             
             agent.advance_time()
             agent.set_ob(next_ob)
@@ -159,7 +159,7 @@ class MazeTrainer(object):
         print("\nCollecting data to be used for training...")
 
         # Simulate Trajectories
-        paths, envsteps_this_batch = sample_trajectories(agent, env, batch_size, self.params['ep_len'], self.params['render'])
+        paths, envsteps_this_batch = sample_trajectories(env, agent,  batch_size, self.params['ep_len'], self.params['render'])
 
         # Add Simulated Sample Paths to Replay Buffer
 
@@ -195,34 +195,47 @@ class MazeTrainer(object):
     def evaluate(self, agent, env):
 
          num_streaks = 0
+         shortest_path = self.params['ep_len']
+         
          for episode in range(self.params['eval_batch_size']):
 
               path = sample_trajectory(env, agent, self.params['ep_len'], self.params['render'])
 
-              envsteps_this_episode = get_pathlength(path)
-
-              if envsteps_this_episode <= self.params['special']['solved_t']:
+              envsteps_this_episode = get_pathlength(path) - 1
+                         
+              if envsteps_this_episode <= self.params['max_sucess_time']:
                     num_streaks += 1
               else:
                     num_streaks = 0
-
+            
               total_reward = path["reward"].sum()
+              
               print("")
               print("======================================")
-              print("Episode: %d" % episode)
-              print("Total Reward: %d" % total_reward)
-              print("Streaks: %d" % num_streaks)
+              print("Episode: " + str(episode))
+              print("Total number of env steps: " +str(envsteps_this_episode))
+              print("Total Reward: " + str(total_reward))
+              print("Streaks: " + str(num_streaks))
               print("")
 
               if envsteps_this_episode >= self.params['ep_len'] - 1:
-                print("Episode %d timed out at %d with total reward = %f." % (episode, envsteps_this_episode, total_reward))
+                print("Episode " +str(episode) + " timed out at " + str(envsteps_this_episode) + "with total reward = " + str(total_reward))
 
-
+              if envsteps_this_episode < shortest_path:
+                 shortest_path =  envsteps_this_episode
+      
+        
               # It's considered done when it's solved over 120 times consecutively
-              if num_streaks > self.params['special']['streak_to_end']:
+              if num_streaks > self.params['streaks_to_end']:
+                  print("Agent has solved the maze " + str(self.params['streaks_to_end']) + " times in a row. Exiting evaluation... ")
                   break
 
-
+         
+         print("After the Evaluation, the current Shortest Path has lenght = " + str(shortest_path))
+         print("Evaluation Finished!")
+         
+         return
+     
          #eval_returns = [eval_path["reward"].sum() for eval_path in eval_paths]
          #eval_ep_lens = [len(eval_path["reward"]) for eval_path in eval_paths]
 
@@ -231,5 +244,3 @@ class MazeTrainer(object):
          #print("Maximum Return on Evaluation Runs: ", np.max(eval_returns))
          #print("Minimum Return on Evaluation Runs: ",np.min(eval_returns))
          #print("Average Episode Length", np.mean(eval_ep_lens))
-
-         return
