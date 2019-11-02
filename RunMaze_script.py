@@ -69,7 +69,7 @@ class Objective(object):
         self.trainer.train(agent, env, self.params['n_iter'])
 
         self.trainer.evaluate(agent, env)
-        
+
         print("Objective Call Loop executed with Success! \o/ ")
         # TODO: WHAT DO WE RETURN??
         real_value = 0
@@ -103,7 +103,7 @@ def main():
     parser.add_argument('--online', default=True)
     parser.add_argument('--enable_recording', default = True)
     parser.add_argument('--render', default = True)
-    
+
     parser.add_argument('--agent_type', default = 'DQN')
 
     parser.add_argument('--save_params', action='store_true')
@@ -123,7 +123,7 @@ def main():
     MAZE_SIZE = (10, 10)
     MAX_T = np.prod(MAZE_SIZE, dtype=int) * 100
     NUM_EPISODES = 50000
-    
+
     # Some additional parameters
     params['training_begins'] = 0
     params['n_iter'] = NUM_EPISODES
@@ -132,9 +132,9 @@ def main():
     params['eval_batch_size'] = NUM_EPISODES
     params['max_sucess_time'] =  np.prod(MAZE_SIZE, dtype=int)
     params['streaks_to_end'] = 200
-    
+
     params['recording_folder'] ="C:/Repositories/cs285-project/data"
-    
+
     #Initializing Objective
     objective = Objective(params)
 
@@ -144,7 +144,7 @@ def main():
     # objective['special']['maze_size'] = MAZE_SIZE
     # objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
 
-    from project.optimizers.initialize import default_reward_table
+    from project.optimizers.genetic import default_reward_table
     objective(list(default_reward_table(MAZE_SIZE+(4,)).flatten()))
 
 
