@@ -3,6 +3,7 @@ import os
 import sys
 import numpy as np
 from collections import OrderedDict
+import copy
 
 from project.infrastructure.utils import Path, sample_trajectories, sample_trajectory, get_pathlength
 from project.infrastructure.replay_buffer import ReplayBuffer
@@ -36,14 +37,14 @@ class MazeTrainer(object):
         #tf.global_variables_initializer().run(session=self.sess)
 
     def train(self, agent, env, n_iter):
-
-
+    
         # Rendering the Maze
         if self.params['render']:
             env.render()
 
         # init vars at beginning of training
         self.total_envsteps = 0
+        self.success_counter = 0
         #self.start_time = time.time()
 
         for itr in range(n_iter):
@@ -53,7 +54,7 @@ class MazeTrainer(object):
             # If online then we make a step in the enviroment and record the transition, else we simulate a 'batch_size' number of trajectories
             if self.params['online']:
                 self.step_env(agent, env)
-                envsteps_this_batch = 1
+                envsteps_this_batch = 1                                   
             else:
                 paths, envsteps_this_batch = self.collect_simulation_trajectories(itr, agent, env, self.params['batch_size'])
                 self.replay_buffer.add_rollouts(paths)
@@ -76,30 +77,47 @@ class MazeTrainer(object):
 
             if self.params['evaluate_after_each_iter']:
                 self.evaluate(agent, env)
-
+            
+            if self.success_counter >= self.params['streaks_to_end']:
+                print("Agent has solved the maze " +str(self.params['streaks_to_end']) + " times in a row. Exiting training... ")
+                input("continue...")
+                break
+            
         print("Training Finished!")
+        input("Yay!")
         return
 
     def step_env(self, agent, env):
 
-        current_ob = agent.get_ob()
+        current_ob = copy.deepcopy(agent.get_ob())
 
-        print('STEP')
+        #print('STEP')
 
-        print('observe: '+str(current_ob))
-        print('q(obs): '+str(agent.policy.q_function(current_ob)))
+        #print('observe: '+str(current_ob))
+        #print('q(obs): '+str(agent.policy.q_function(current_ob)))
         # Query action from agent
         action = agent.get_action(current_ob)
-        print('action: '+str(env.ACTION[action]))
+        #print('action: '+str(env.ACTION[action]))
         # Make a step in the enviroment
         next_ob, _, done, info = env.step(env.ACTION[action])
-        print('next will observe: '+str(next_ob))
+        #print('next will observe: '+str(next_ob))
+        #print(' ')
         # Compute the reward
         reward = agent.reward(current_ob, action)
-
-        # Store transition in the buffer
+        
+        if done is True:
+            reward += agent.reward(next_ob, action) #collecting terminal reward
+            
+        # Store transition in the Buffer
+        ob ,ac, rew, n_ob, term = [], [], [], [], []     
+        ob.append(current_ob)
+        ac.append(action)
+        rew.append(reward)
+        n_ob.append(next_ob)
+        term.append(done)
+        
         transition = []
-        transition.append(Path([current_ob], [action], [reward], [next_ob], [done]))
+        transition.append(Path(ob, ac, rew, n_ob, term))
         self.replay_buffer.add_rollouts(transition)
 
         # Rendering the Maze
@@ -107,14 +125,31 @@ class MazeTrainer(object):
             env.render()
 
         # Update agent current position
-        if done is True:
-            reward += agent.reward(next_ob, action) #collecting terminal reward ???? this does not do anywhere
-            agent.reset_time()
+        if (done is True) or (agent.current_t == self.params['ep_len']):   
+            agent.accumulate_reward(reward)
+            
+            if done:
+                 print("Episode finished sucessfully after " +str(agent.current_t) + " time steps with total reward = " +str(agent.accumulated_reward) )   
+                 
+                 if agent.current_t <= self.params['max_sucess_time']:
+                     self.success_counter += 1
+                 else:
+                     self.success_counter = 0 #reset the counter
+                 
+            else:
+                print("Agent timed out after %f time steps with total reward = %f" % (agent.current_t, agent.accumulated_reward) )   
+                
+            agent.reset()
             agent.set_ob(env.reset())
+                
         else:
+            agent.accumulate_reward(reward)
+            print("Agent at time step %f, with running reward = %f" % (agent.current_t, agent.accumulated_reward) )   
+            
             agent.advance_time()
             agent.set_ob(next_ob)
-        return # ?????
+        
+        return
 
     ####################################
     ####################################
@@ -132,17 +167,16 @@ class MazeTrainer(object):
 
 
     def run_learner(self, agent):
-        print('\nTraining agent using sampled data from replay buffer...')
+        #print('\nTraining agent using sampled data from replay buffer...')
 
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
 
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch =  self.replay_buffer.sample_recent_data(self.params['train_batch_size'])
             
-            print(len(ob_batch))
-            print("")
-            check = [ob_batch[0], ac_batch[0], re_batch[0], next_ob_batch[0], terminal_batch[0]]
-            print(check)
-            input('Debug. Please wait...')
+            #print(" ")
+            #print('Debug Check on Learner:')
+            #print("ob: " + str(ob_batch[0]) + " ac: " +str(ac_batch[0]) + " next_ob: " + str(next_ob_batch[0]) )
+            #print(" ")
             
             loss = agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
 
@@ -152,9 +186,10 @@ class MazeTrainer(object):
     ####################################
 
     def simple_training_log_function(self, itr, loss):
-
-        print("\n Current Training Major Iteration: ", itr, " Current Training Loss: ", loss)
-
+        
+        #print("\n Current Training Major Iteration: ", itr, " Current Training Loss: ", loss)
+        print(" ")
+        
         return
 
     def evaluate(self, agent, env):

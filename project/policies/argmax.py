@@ -34,6 +34,6 @@ class EpsilonGreedyAM(ArgMax):
     def get_action(self, obs, t):
         eps = self.exploration.value(t)
         if np.random.random() < eps:
-            return int(q_function.NUM_ACTIONS*np.random.random())
+            return int(self.q_function.NUM_ACTIONS*np.random.random())
         else:
             return self._get_action(self, obs)

@@ -120,22 +120,24 @@ def main():
     #self.mean_episode_reward = -float('nan')
     #self.best_mean_episode_reward = -float('inf')
 
-    #Some additional parameters
-    params['training_begins'] = 0
-    params['recording_folder'] ="C:/Repositories/cs285-project/data"
-
-    objective = Objective(params)
-
     # Seting some of the parameters
     MAZE_SIZE = (10, 10)
     MAX_T = np.prod(MAZE_SIZE, dtype=int) * 100
     NUM_EPISODES = 50000
-
-
-    objective.params['n_iter'] = NUM_EPISODES
-    objective.params['ep_len'] = MAX_T
-    objective.params['batch_size'] = 1
-    objective.params['eval_batch_size'] = NUM_EPISODES
+    
+    # Some additional parameters
+    params['training_begins'] = 0
+    params['n_iter'] = NUM_EPISODES
+    params['ep_len'] = MAX_T
+    params['batch_size'] = 1
+    params['eval_batch_size'] = NUM_EPISODES
+    params['max_sucess_time'] =  np.prod(MAZE_SIZE, dtype=int)
+    params['streaks_to_end'] = 200
+    
+    params['recording_folder'] ="C:/Repositories/cs285-project/data"
+    
+    #Initializing Objective
+    objective = Objective(params)
 
     # objective['special']['solved_t'] = np.prod(MAZE_SIZE, dtype=int)
     # objective['special']['streak_to_end'] = 120
