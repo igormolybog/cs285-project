@@ -69,9 +69,9 @@ class Objective(object):
         self.trainer.train(agent, env, self.params['n_iter'])
 
         evaluation_summary = self.trainer.evaluate_training()
-        
+
         #self.trainer.evaluate_agent(agent, env)
-        
+
 
         #self.trainer.evaluate(agent, env)
 
@@ -150,8 +150,8 @@ def main():
     # objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
 
     from project.optimizers.genetic import default_reward_table
-    value = objective(list(default_reward_table(MAZE_SIZE+(4,)).flatten()))
-    
+    value = objective(default_reward_table(MAZE_SIZE+(4,)))
+
     print(value)
 
 if __name__ == "__main__":
