@@ -203,7 +203,7 @@ class MazeTrainer(object):
         Summary = {  "max_path_length" :  max(path_lengths),
                      "min_path_length" :  min(path_lengths),
                      "num_of_env_steps" : sum(path_lengths),
-                     "avg_path_length":  int(sum(path_lengths) / num_of_paths)
+                     "avg_path_length":  sum(path_lengths) / num_of_paths
                   }
 
         print("")

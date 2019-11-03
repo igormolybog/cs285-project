@@ -68,6 +68,11 @@ class Objective(object):
         env = self.env_factory()
         env.seed(self.params['seed'])
 
+        import sys
+        orig_stdout = sys.stdout
+        f = open('print.log', 'w')
+        sys.stdout = f
+
         # Ideally, we would create here an ob_placeholder and ac_placeholder,
         # and pass it to the agent (instead of shape)
         ob_dim = env.observation_space.shape
@@ -83,11 +88,11 @@ class Objective(object):
 
         #self.trainer.evaluate_agent(agent, env)
 
-
-        #self.trainer.evaluate(agent, env)
-
         print("Objective Call Loop executed with Success! \o/ ")
-        # TODO: WHAT DO WE RETURN??
+
+        sys.stdout = orig_stdout
+        f.close()
+
         real_value = evaluation_summary["avg_path_length"]
         return real_value, # RETURNS A TUPLE (required by the DEAP)
 
@@ -95,7 +100,7 @@ def main():
 
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env_name',  default='maze-random-10x10-plus-v0',
+    parser.add_argument('--env_name',  default='maze-sample-10x10-v0', #'maze-random-10x10-plus-v0',
                         choices=('maze-random-10x10-plus-v0',
                                  'Maze_Dragons-v0')
                         )
@@ -137,7 +142,7 @@ def main():
 
     # Seting some of the parameters
     MAZE_SIZE = (10, 10)
-    MAX_T = np.prod(MAZE_SIZE, dtype=int) * 100
+    MAX_T = np.prod(MAZE_SIZE, dtype=int) * 5
     NUM_EPISODES = 50000
 
     # Some additional parameters
@@ -163,17 +168,8 @@ def main():
     # from project.optimizers.genetic import default_reward_table
     # value = objective(default_reward_table(MAZE_SIZE+(4,)))
 
-    import sys
-
-    orig_stdout = sys.stdout
-    f = open('out.txt', 'w')
-    sys.stdout = f
-
     from project.optimizers.genetic import Genetic
-    pop, log, hof = Genetic().optimize(objective, ngen=30, n_pop=30)
-
-    sys.stdout = orig_stdout
-    f.close()
+    pop, log, hof = Genetic().optimize(objective, ngen=10, n_pop=10)
 
     print("Best individual is: %s\nwith fitness: %s" % (hof[0], hof[0].fitness))
 

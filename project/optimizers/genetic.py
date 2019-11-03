@@ -48,8 +48,8 @@ class Genetic(object):
     def __init__(self, *args, value_bound=10,  **kwargs):
         super(Genetic, self).__init__(*args, **kwargs)
 
-        creator.create("FitnessMax", base.Fitness, weights=(1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMax)
+        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+        creator.create("Individual", list, fitness=creator.FitnessMin)
 
         value_bound = 10
         self.toolbox = base.Toolbox()
