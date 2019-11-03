@@ -25,6 +25,10 @@ from gym.wrappers.monitor import Monitor
 
 
 class Objective(object):
+    '''
+    # RETURNS A TUPLE (required by the DEAP)
+    '''
+
 
     def __init__(self, params):
 
@@ -44,7 +48,13 @@ class Objective(object):
 
         # Environment
         # Make the gym environment
-        self.env_factory = lambda: gym.make(self.params.pop('env_name')).env
+        self.env_factory = lambda: gym.make(self.params['env_name']).env
+
+        env = self.env_factory()
+        ob_dim = env.observation_space.shape
+        ac_dim = env.action_space.n
+        maze_size = tuple((env.observation_space.high + np.ones(env.observation_space.shape)).astype(int))
+        self.input_shape = maze_size+(ac_dim,)
 
         self.trainer = MazeTrainer(self.params)
 
@@ -53,6 +63,7 @@ class Objective(object):
     def __call__(self, argument):
         '''
             argument is a list that will be cast into a table
+            # RETURNS A TUPLE (required by the DEAP)
         '''
         env = self.env_factory()
         env.seed(self.params['seed'])
@@ -78,7 +89,7 @@ class Objective(object):
         print("Objective Call Loop executed with Success! \o/ ")
         # TODO: WHAT DO WE RETURN??
         real_value = evaluation_summary["avg_path_length"]
-        return real_value
+        return real_value, # RETURNS A TUPLE (required by the DEAP)
 
 def main():
 
@@ -107,7 +118,7 @@ def main():
 
     parser.add_argument('--online', default=True)
     parser.add_argument('--enable_recording', default = True)
-    parser.add_argument('--render', default = True)
+    parser.add_argument('--render', default = False)
 
     parser.add_argument('--agent_type', default = 'DQN')
 
@@ -149,10 +160,22 @@ def main():
     # objective['special']['maze_size'] = MAZE_SIZE
     # objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
 
-    from project.optimizers.genetic import default_reward_table
-    value = objective(default_reward_table(MAZE_SIZE+(4,)))
+    # from project.optimizers.genetic import default_reward_table
+    # value = objective(default_reward_table(MAZE_SIZE+(4,)))
 
-    print(value)
+    from project.optimizers.genetic import Genetic
+    pop, log, hof = Genetic().optimize(objective, ngen=3, n_pop=3)
+    print("Best individual is: %s\nwith fitness: %s" % (hof[0], hof[0].fitness))
+
+    import matplotlib.pyplot as plt
+    gen, avg, min_, max_ = log.select("gen", "avg", "min", "max")
+    plt.plot(gen, avg, label="average")
+    plt.plot(gen, min_, label="minimum")
+    plt.plot(gen, max_, label="maximum")
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness")
+    plt.legend(loc="lower right")
+    plt.show()
 
 if __name__ == "__main__":
     main()

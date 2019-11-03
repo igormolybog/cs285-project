@@ -15,7 +15,7 @@ def normalize_total(array):
     flat = array.flatten()
     return array/np.linalg.norm(flat)
 
-def evalRelMax(individual, shape):
+def evalRelMax(individual, shape = (3,3,2)):
     individual = np.array(individual)
     individual = individual.reshape(shape)
     individual = normalize_total(individual)
@@ -74,7 +74,7 @@ class Genetic(object):
         if initializer is None:
             initializer = lambda: default_reward_table(objective.input_shape)
 
-        self.toolbox.register("evaluate", objective, shape=objective.input_shape)
+        self.toolbox.register("evaluate", objective)
 
         # self.toolbox.register("individual", tools.initRepeat, creator.Individual, self.toolbox.attr_bool, n=np.prod(objective.input_shape))
         self.toolbox.register("individual", tools.initIterate, creator.Individual, initializer)

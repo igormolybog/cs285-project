@@ -33,12 +33,12 @@ class MazeTrainer(object):
         # Set Replay Buffer
         #self.replay_buffer = ReplayBuffer()
         self.replay_buffer = NewReplayBuffer()
- 
+
         # Initializing TF variables
         #tf.global_variables_initializer().run(session=self.sess)
 
     def train(self, agent, env, n_iter):
-    
+
         # Rendering the Maze
         if self.params['render']:
             env.render()
@@ -55,7 +55,7 @@ class MazeTrainer(object):
             # If online then we make a step in the enviroment and record the transition, else we simulate a 'batch_size' number of trajectories
             if self.params['online']:
                 self.step_env(agent, env)
-                envsteps_this_batch = 1                                   
+                envsteps_this_batch = 1
             else:
                 paths, envsteps_this_batch = self.collect_simulation_trajectories(itr, agent, env, self.params['batch_size'])
                 self.replay_buffer.add_rollouts(paths)
@@ -78,16 +78,16 @@ class MazeTrainer(object):
 
             if self.params['evaluate_after_each_iter']:
                 self.evaluate_agent(agent, env)
-            
+
             if self.success_counter >= self.params['streaks_to_end']:
                 print("Agent has solved the maze " +str(self.params['streaks_to_end']) + " times in a row. Exiting training... ")
                 break
-          
-            
+
+
         print("Training Finished!")
         print(" ")
-        input("Continue to Evaluation...")
-        
+        # input("Continue to Evaluation...")
+
         return
 
     def step_env(self, agent, env):
@@ -106,18 +106,18 @@ class MazeTrainer(object):
         #print('next will observe: '+str(next_ob))
         #print(' ')
         # Compute the reward
-        reward = agent.reward(current_ob, action)  
+        reward = agent.reward(current_ob, action)
         if done is True:
             reward += agent.reward(next_ob, action) #collecting terminal reward
-            
+
         # Store transition in the Buffer
-        ob ,ac, rew, n_ob, term = [], [], [], [], []     
+        ob ,ac, rew, n_ob, term = [], [], [], [], []
         ob.append(current_ob)
         ac.append(action)
         rew.append(reward)
         n_ob.append(next_ob)
         term.append(done)
-              
+
         transition = Transition(ob, ac, rew, n_ob, term)
         self.replay_buffer.add_transition(transition)
 
@@ -127,28 +127,28 @@ class MazeTrainer(object):
 
         # Update agent current position
         agent.accumulate_reward(reward)
-        if (done is True or agent.current_t == self.params['ep_len']):   
-                    
+        if (done is True or agent.current_t == self.params['ep_len']):
+
             if done:
-                 print("Episode finished sucessfully after " +str(agent.get_time()) + " time steps with total reward = " +str(agent.get_accumulated_reward()) )   
-                 
+                 print("Episode finished sucessfully after " +str(agent.get_time()) + " time steps with total reward = " +str(agent.get_accumulated_reward()) )
+
                  if agent.current_t <= self.params['max_sucess_time']:
                      self.success_counter += 1
                  else:
                      self.success_counter = 0 #reset the counter
-                 
+
             else:
-                print("Agent timed out after %f time steps with total reward = %f" % (agent.get_time(), agent.get_accumulated_reward()) )   
-                
+                print("Agent timed out after %f time steps with total reward = %f" % (agent.get_time(), agent.get_accumulated_reward()) )
+
             agent.reset()
             agent.set_ob(env.reset())
-                
+
         else:
-            print("Agent at time step %f, with running reward = %f" % (agent.get_time(), agent.get_accumulated_reward()) )   
-            
+            print("Agent at time step %f, with running reward = %f" % (agent.get_time(), agent.get_accumulated_reward()) )
+
             agent.advance_time()
             agent.set_ob(next_ob)
-        
+
         return
 
     ####################################
@@ -172,12 +172,12 @@ class MazeTrainer(object):
         for train_step in range(self.params['num_agent_train_steps_per_iter']):
 
             ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch =  self.replay_buffer.sample_recent_data(self.params['train_batch_size'])
-            
+
             #print(" ")
             #print('Debug Check on Learner:')
             #print("ob: " + str(ob_batch[0]) + " ac: " +str(ac_batch[0]) + " next_ob: " + str(next_ob_batch[0]) )
             #print(" ")
-            
+
             loss = agent.train(ob_batch, ac_batch, re_batch, next_ob_batch, terminal_batch)
 
         return loss
@@ -186,26 +186,26 @@ class MazeTrainer(object):
     ####################################
 
     def simple_training_log_function(self, itr, loss):
-        
+
         #print("\n Current Training Major Iteration: ", itr, " Current Training Loss: ", loss)
         print(" ")
-        
+
         return
 
     def evaluate_training(self):
-        
+
         num_of_paths = len(self.replay_buffer.path_store)
-        
+
         path_lengths = []
         for path in self.replay_buffer.path_store:
             path_lengths.append(len(path['reward']))
-              
+
         Summary = {  "max_path_length" :  max(path_lengths),
                      "min_path_length" :  min(path_lengths),
                      "num_of_env_steps" : sum(path_lengths),
                      "avg_path_length":  int(sum(path_lengths) / num_of_paths)
                   }
-       
+
         print("")
         print("====================================")
         print("Number of Env steps until training finished: " +str(Summary["num_of_env_steps"]))
@@ -213,27 +213,27 @@ class MazeTrainer(object):
         print("Minimum number of steps until time out/success: " +str(Summary["min_path_length"]))
         print("Average number of rollout length in training: " +str(Summary["avg_path_length"]))
         print("")
-     
+
         return Summary
-   
+
     def evaluate_agent(self, agent, env):
 
          num_streaks = 0
          shortest_path = self.params['ep_len']
-         
+
          for episode in range(self.params['eval_batch_size']):
 
               path = sample_trajectory(env, agent, self.params['ep_len'], self.params['render'])
 
               envsteps_this_episode = get_pathlength(path) - 1
-                         
+
               if envsteps_this_episode <= self.params['max_sucess_time']:
                     num_streaks += 1
               else:
                     num_streaks = 0
-            
+
               total_reward = path["reward"].sum()
-              
+
               print("")
               print("======================================")
               print("Episode: " + str(episode))
@@ -247,19 +247,19 @@ class MazeTrainer(object):
 
               if envsteps_this_episode < shortest_path:
                  shortest_path =  envsteps_this_episode
-      
-        
+
+
               # It's considered done when it's solved over 120 times consecutively
               if num_streaks > self.params['streaks_to_end']:
                   print("Agent has solved the maze " + str(self.params['streaks_to_end']) + " times in a row. Exiting evaluation... ")
                   break
 
-         
+
          print("After the Evaluation, the current Shortest Path has lenght = " + str(shortest_path))
          print("Evaluation Finished!")
-         
+
          return
-     
+
          #eval_returns = [eval_path["reward"].sum() for eval_path in eval_paths]
          #eval_ep_lens = [len(eval_path["reward"]) for eval_path in eval_paths]
 
