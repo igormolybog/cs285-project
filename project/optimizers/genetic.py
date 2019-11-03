@@ -23,20 +23,25 @@ def evalRelMax(individual, shape):
 
 evalRelMax.input_shape = (3,3,2)
 
-def myMutate(individual):
+def myMutate(individual, rate=0.01):
     for i in range(len(individual)):
-        individual[i] = individual[i]+np.random.random()
+        individual[i] = individual[i]+2*(np.random.random()-0.5)*rate
     return individual,
 
 def default_reward_table(shape):
     '''
         call r_rable.cast(default_reward_table(shape))
     '''
-    # prod = lambda s: reduce(lambda a, b: a*b, s)
     list_to_rewtable = lambda x: np.array(x).reshape(shape)
     init_rew_list = [-0.1/np.prod(shape[:-1])]*(np.prod(shape)-shape[-1])+[1]*shape[-1]
-    return list_to_rewtable(init_rew_list)
+    return init_rew_list# list_to_rewtable(init_rew_list)
 
+# def eq(a, b):
+#     print('comparing a and b:')
+#     print('a = ', a)
+#     print('b = ', b)
+#     print(all(a == b))
+#     return all(a == b)
 
 class Genetic(object):
 
@@ -55,17 +60,19 @@ class Genetic(object):
         self.toolbox.register("mate", tools.cxTwoPoint)
         # self.toolbox.register("mutate", tools.mutFlipBit, indpb=0.10)
         self.toolbox.register("mutate", myMutate)
-        self.toolbox.register("select", tools.selTournament, tournsize=3)
+        self.toolbox.register("select", tools.selTournament, tournsize=25)
 
-        self.hof = tools.HallOfFame(1)
+        self.hof = tools.HallOfFame(1) # , similar=lambda a,b:(np.array(a)==np.array(b)).all()
         self.stats = tools.Statistics(lambda ind: ind.fitness.values)
         self.stats.register("avg", np.mean)
         self.stats.register("min", np.min)
         self.stats.register("max", np.max)
 
 
-    def optimize(self, objective, initializer=lambda: default_reward_table(objective.input_shape), ngen=10):
+    def optimize(self, objective, initializer=None, ngen=10, n_pop=50):
 
+        if initializer is None:
+            initializer = lambda: default_reward_table(objective.input_shape)
 
         self.toolbox.register("evaluate", objective, shape=objective.input_shape)
 
@@ -74,16 +81,16 @@ class Genetic(object):
 
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
 
-        pop = self.toolbox.population(n=50)
+        pop = self.toolbox.population(n=n_pop)
 
 
-        pop, logbook = algorithms.eaSimple(pop, self.toolbox, cxpb=0.5, mutpb=0.8, ngen=ngen,
+        pop, logbook = algorithms.eaSimple(pop, self.toolbox, cxpb=0.3, mutpb=0.1, ngen=ngen,
                                             stats=self.stats, halloffame=self.hof, verbose=True)
 
         return pop, logbook, self.hof
 
 if __name__ == "__main__":
-    pop, log, hof = Genetic().optimize(evalRelMax)
+    pop, log, hof = Genetic().optimize(evalRelMax, n_pop=50)
     print("Best individual is: %s\nwith fitness: %s" % (hof[0], hof[0].fitness))
 
     import matplotlib.pyplot as plt
