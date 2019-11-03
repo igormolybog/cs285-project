@@ -68,16 +68,16 @@ class Objective(object):
 
         self.trainer.train(agent, env, self.params['n_iter'])
 
-        self.trainer.evaluate_training()
+        evaluation_summary = self.trainer.evaluate_training()
         
         #self.trainer.evaluate_agent(agent, env)
         
 
-        self.trainer.evaluate(agent, env)
+        #self.trainer.evaluate(agent, env)
 
         print("Objective Call Loop executed with Success! \o/ ")
         # TODO: WHAT DO WE RETURN??
-        real_value = 0
+        real_value = evaluation_summary["avg_path_length"]
         return real_value
 
 def main():
@@ -150,8 +150,9 @@ def main():
     # objective['special']['maze_goal'] = MAZE_SIZE - np.array((1, 1))
 
     from project.optimizers.genetic import default_reward_table
-    objective(list(default_reward_table(MAZE_SIZE+(4,)).flatten()))
-
+    value = objective(list(default_reward_table(MAZE_SIZE+(4,)).flatten()))
+    
+    print(value)
 
 if __name__ == "__main__":
     main()
