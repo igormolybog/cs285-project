@@ -147,7 +147,7 @@ def main():
     params['batch_size'] = 1
     params['eval_batch_size'] = NUM_EPISODES
     params['max_sucess_time'] =  np.prod(MAZE_SIZE, dtype=int)
-    params['streaks_to_end'] = 200
+    params['streaks_to_end'] = 50
 
     params['recording_folder'] ="C:/Repositories/cs285-project/data"
 
@@ -163,8 +163,18 @@ def main():
     # from project.optimizers.genetic import default_reward_table
     # value = objective(default_reward_table(MAZE_SIZE+(4,)))
 
+    import sys
+
+    orig_stdout = sys.stdout
+    f = open('out.txt', 'w')
+    sys.stdout = f
+
     from project.optimizers.genetic import Genetic
-    pop, log, hof = Genetic().optimize(objective, ngen=3, n_pop=3)
+    pop, log, hof = Genetic().optimize(objective, ngen=30, n_pop=30)
+
+    sys.stdout = orig_stdout
+    f.close()
+
     print("Best individual is: %s\nwith fitness: %s" % (hof[0], hof[0].fitness))
 
     import matplotlib.pyplot as plt
